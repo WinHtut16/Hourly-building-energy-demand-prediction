@@ -10,7 +10,8 @@ import numpy as np
 from flask import Flask, request, jsonify, render_template
 
 # ── Load model artifact ────────────────────────────────────────────────────────
-MODEL_PATH = os.getenv("MODEL_PATH", "model.pkl")
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.getenv("MODEL_PATH", os.path.join(BASE_DIR, "model.pkl"))
 
 with open(MODEL_PATH, "rb") as f:
     artifact = pickle.load(f)
@@ -20,7 +21,7 @@ FEATURES = artifact["features"]
 metrics  = artifact["metrics"]
 
 # ── App ───────────────────────────────────────────────────────────────────────
-app = Flask(__name__)
+app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"))
 
 
 def validate_input(data: dict):
