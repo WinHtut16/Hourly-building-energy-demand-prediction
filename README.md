@@ -1,8 +1,8 @@
-# ⚡ Energy Demand Forecasting
+# ⚡ Energy Demand Forecasting API
 
 Hourly building energy demand prediction using LightGBM, served with a web UI and REST API, deployed on Render.
 
-**🌐 Live Demo:** https://hourly-building-energy-demand-prediction.onrender.com
+**🌐 Live Demo:** https://hourly-building-energy-demand-prediction.onrender.com/
 
 > **Note:** Free tier sleeps after 15 min of inactivity — first request may take ~30s to wake up.
 
@@ -12,39 +12,66 @@ Hourly building energy demand prediction using LightGBM, served with a web UI an
 
 Visit the live URL to access the interactive prediction UI. No coding required.
 
-- Select **hour, day, and month** from dropdowns
-- Enter **lag and rolling mean values** (past demand in kW)
+- Pick any **date and time** from the calendar
+- All 13 features are **calculated automatically** from historical averages
+- Lag and rolling values are **editable** if you have actual meter readings
 - Click **Predict** to get the forecasted demand instantly
-- Weekend flag and cyclic hour encoding are calculated automatically
-
 
 ---
 
-## 📊 Model Performance
+## 📊 Model Comparison
 
-| Metric | Test Set |
-|--------|----------|
-| R²     | 0.9528   |
-| RMSE   | 5.5169   |
-| MAE    | 2.7230   |
-| MAPE   | 9.23%    |
+Three models were evaluated on the same test set (Jul 2019 onwards) to justify the final model choice.
+
+| Model | R² | RMSE (kW) | MAE (kW) | MAPE (%) | Selected |
+|---|---|---|---|---|---|
+| Linear Regression | 0.8240 | 10.653 | 6.535 | 24.57% | ✗ |
+| LightGBM (default) | 0.9387 | 6.286 | 2.857 | 9.46% | ✗ |
+| **LightGBM (Optuna tuned)** | **0.9528** | **5.517** | **2.723** | **9.23%** | **✓** |
+
+LightGBM tuned outperforms Linear Regression by **48% on RMSE** and **35% on R²**, confirming that energy demand patterns are strongly non-linear and that hyperparameter tuning provides meaningful additional gains.
+
+---
+
+## ✅ Final Model Performance
+
+| Metric | Value |
+|--------|-------|
+| R²     | 0.9528 |
+| RMSE   | 5.517 kW |
+| MAE    | 2.723 kW |
+| MAPE   | 9.23% |
 
 ### Cross-Validation (TimeSeriesSplit — 5 Fold)
 
-| Metric | Mean ± Std          |
-|--------|---------------------|
-| RMSE   | 5.375 ± 0.961       |
-| MAE    | 3.426 ± 0.784       |
-| R²     | 0.9478 ± 0.0223     |
+| Metric | Mean ± Std |
+|--------|------------|
+| RMSE   | 5.375 ± 0.961 kW |
+| MAE    | 3.426 ± 0.784 kW |
+| R²     | 0.9478 ± 0.0223 |
 
 ---
 
 ## 🤖 Model Details
 
 - **Algorithm:** LightGBM Regressor
-- **Tuning:** Optuna (50 trials, TimeSeriesSplit inner loop)
+- **Tuning:** Optuna (50 trials, TPE sampler, TimeSeriesSplit inner loop)
 - **Training period:** Jul 2018 → Jun 2019
 - **Test period:** Jul 2019 onwards
+
+### Best Hyperparameters (Optuna)
+
+| Parameter | Value |
+|-----------|-------|
+| n_estimators | 498 |
+| learning_rate | 0.0615 |
+| num_leaves | 39 |
+| max_depth | 7 |
+| min_child_samples | 44 |
+| subsample | 0.710 |
+| colsample_bytree | 0.764 |
+| reg_alpha | 1.81e-06 |
+| reg_lambda | 6.44e-05 |
 
 ### Features (13 total)
 
@@ -93,7 +120,7 @@ curl -X POST https://hourly-building-energy-demand-prediction.onrender.com/predi
 ```json
 {
   "predicted_total_demand_kW": 52.3141,
-  "input": { "hour": 9, "weekday": 0, "..." : "..." }
+  "input": { "hour": 9, "weekday": 0, "...": "..." }
 }
 ```
 
