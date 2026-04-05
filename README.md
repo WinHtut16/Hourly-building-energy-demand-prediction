@@ -17,7 +17,6 @@ Visit the live URL to access the interactive prediction UI. No coding required.
 - Click **Predict** to get the forecasted demand instantly
 - Weekend flag and cyclic hour encoding are calculated automatically
 
-![UI Preview](https://hourly-building-energy-demand-prediction.onrender.com)
 
 ---
 
