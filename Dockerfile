@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # ── Copy application files ────────────────────────────────────────────────────
 COPY app.py .
 COPY model.pkl .
+COPY templates/ templates/
 
 # ── Render injects PORT at runtime; default to 10000 ──────────────────────────
 ENV PORT=10000
