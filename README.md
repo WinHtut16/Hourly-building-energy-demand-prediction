@@ -1,39 +1,53 @@
-# Energy Demand Forecasting API
+# ⚡ Energy Demand Forecasting
 
-Hourly building energy demand prediction using LightGBM, deployed as a REST API on Render.
+Hourly building energy demand prediction using LightGBM, served with a web UI and REST API, deployed on Render.
 
-**Live API:** https://YOUR-APP-NAME.onrender.com
+**🌐 Live Demo:** https://hourly-building-energy-demand-prediction.onrender.com
+
+> **Note:** Free tier sleeps after 15 min of inactivity — first request may take ~30s to wake up.
 
 ---
 
-## Model Performance
+## 🖥️ Web Interface
 
-| Metric | Value |
-|--------|-------|
-| RMSE | 5.5169 |
-| MAE | 2.7230 |
-| MAPE | 9.23% |
-| R² | 0.9528 |
+Visit the live URL to access the interactive prediction UI. No coding required.
+
+- Select **hour, day, and month** from dropdowns
+- Enter **lag and rolling mean values** (past demand in kW)
+- Click **Predict** to get the forecasted demand instantly
+- Weekend flag and cyclic hour encoding are calculated automatically
+
+![UI Preview](https://hourly-building-energy-demand-prediction.onrender.com)
+
+---
+
+## 📊 Model Performance
+
+| Metric | Test Set |
+|--------|----------|
+| R²     | 0.9528   |
+| RMSE   | 5.5169   |
+| MAE    | 2.7230   |
+| MAPE   | 9.23%    |
 
 ### Cross-Validation (TimeSeriesSplit — 5 Fold)
 
-| Metric | Mean ± Std |
-|--------|------------|
-| RMSE | 5.375 ± 0.961 |
-| MAE | 3.426 ± 0.784 |
-| R² | 0.9478 ± 0.0223 |
+| Metric | Mean ± Std          |
+|--------|---------------------|
+| RMSE   | 5.375 ± 0.961       |
+| MAE    | 3.426 ± 0.784       |
+| R²     | 0.9478 ± 0.0223     |
 
 ---
 
-## Model Details
+## 🤖 Model Details
 
 - **Algorithm:** LightGBM Regressor
 - **Tuning:** Optuna (50 trials, TimeSeriesSplit inner loop)
-- **Features:** 13 (calendar, cyclic hour encoding, lag, rolling mean)
-- **Training period:** 2018-07 → 2019-06
-- **Test period:** 2019-07 onwards
+- **Training period:** Jul 2018 → Jun 2019
+- **Test period:** Jul 2019 onwards
 
-### Features Used
+### Features (13 total)
 
 | Feature | Description |
 |---------|-------------|
@@ -53,60 +67,26 @@ Hourly building energy demand prediction using LightGBM, deployed as a REST API 
 
 ---
 
-## API Endpoints
+## 🔗 API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/` | Health check + model metrics |
+| GET | `/` | Web UI |
+| GET | `/api` | Health check + model metrics (JSON) |
 | GET | `/features` | Lists all required input features |
-| POST | `/predict` | Predict demand for a single record |
-| POST | `/predict_batch` | Predict demand for multiple records |
-
----
-
-## Usage Examples
-
-### Health Check
-
-```bash
-curl https://YOUR-APP-NAME.onrender.com/
-```
-
-**Response:**
-```json
-{
-  "status": "ok",
-  "model": "LightGBM Energy Demand Forecaster",
-  "metrics": {
-    "rmse": 5.5169,
-    "mae": 2.723,
-    "mape": 9.23,
-    "r2": 0.9528
-  }
-}
-```
-
----
+| POST | `/predict` | Single prediction |
+| POST | `/predict_batch` | Batch predictions |
 
 ### Single Prediction
 
 ```bash
-curl -X POST https://YOUR-APP-NAME.onrender.com/predict \
+curl -X POST https://hourly-building-energy-demand-prediction.onrender.com/predict \
   -H "Content-Type: application/json" \
   -d '{
-    "hour": 9,
-    "weekday": 0,
-    "month": 7,
-    "is_weekend": 0,
-    "hour_sin": 0.7071,
-    "hour_cos": 0.7071,
-    "lag_1": 45.2,
-    "lag_24": 44.8,
-    "lag_48": 43.1,
-    "lag_168": 46.3,
-    "rolling_24": 35.6,
-    "rolling_48": 34.2,
-    "rolling_168": 33.8
+    "hour": 9, "weekday": 0, "month": 7, "is_weekend": 0,
+    "hour_sin": 0.7071, "hour_cos": 0.7071,
+    "lag_1": 45.2, "lag_24": 44.8, "lag_48": 43.1, "lag_168": 46.3,
+    "rolling_24": 35.6, "rolling_48": 34.2, "rolling_168": 33.8
   }'
 ```
 
@@ -118,12 +98,10 @@ curl -X POST https://YOUR-APP-NAME.onrender.com/predict \
 }
 ```
 
----
-
 ### Batch Prediction
 
 ```bash
-curl -X POST https://YOUR-APP-NAME.onrender.com/predict_batch \
+curl -X POST https://hourly-building-energy-demand-prediction.onrender.com/predict_batch \
   -H "Content-Type: application/json" \
   -d '{
     "records": [
@@ -155,20 +133,20 @@ curl -X POST https://YOUR-APP-NAME.onrender.com/predict_batch \
 
 ---
 
-## Repo Structure
+## 📁 Repo Structure
 
 ```
-├── app.py              # Flask REST API
-├── model.pkl           # Trained LightGBM model artifact
-├── requirements.txt    # Python dependencies
-├── Dockerfile          # Container config for Render
+├── app.py                  # Flask app (UI + REST API)
+├── model.pkl               # Trained LightGBM model artifact
+├── requirements.txt        # Python dependencies
+├── Dockerfile              # Container config for Render
+├── templates/
+│   └── index.html          # Web UI
 └── README.md
 ```
 
 ---
 
-## Deployment
+## 🚀 Deployment
 
-Deployed on [Render](https://render.com) using Docker.
-
-> **Note:** The free tier sleeps after 15 minutes of inactivity. The first request may take ~30 seconds to wake up.
+Deployed on [Render](https://render.com) using Docker (Singapore region).

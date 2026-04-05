@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Energy Demand Forecaster</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1f2e 0%, #16213e 100%);
+      border-bottom: 1px solid #2d3748;
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; color: #f7fafc; }
+    header p  { font-size: 0.85rem; color: #718096; margin-top: 2px; }
+
+    /* ── Layout ── */
+    .page { max-width: 1100px; margin: 0 auto; padding: 36px 24px; }
+
+    /* ── Metric cards ── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .metric-card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+    }
+    .metric-card .label { font-size: 0.75rem; color: #718096; text-transform: uppercase; letter-spacing: 1px; }
+    .metric-card .value { font-size: 1.9rem; font-weight: 700; margin-top: 6px; }
+    .metric-card .value.green  { color: #68d391; }
+    .metric-card .value.blue   { color: #63b3ed; }
+    .metric-card .value.purple { color: #b794f4; }
+    .metric-card .value.orange { color: #fbd38d; }
+
+    /* ── Main grid ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #f7fafc;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card h2 span.badge {
+      font-size: 0.7rem;
+      background: #2d3748;
+      color: #a0aec0;
+      padding: 2px 8px;
+      border-radius: 99px;
+    }
+
+    /* ── Form grid ── */
+    .form-section-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #4a5568;
+      margin: 20px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #2d3748;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label {
+      font-size: 0.78rem;
+      color: #a0aec0;
+      font-weight: 500;
+    }
+    .form-group .hint {
+      font-size: 0.68rem;
+      color: #4a5568;
+      margin-top: 2px;
+    }
+    .form-group input, .form-group select {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      color: #e2e8f0;
+      padding: 9px 12px;
+      font-size: 0.88rem;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .form-group select option { background: #1a1f2e; }
+
+    /* ── Auto-calc notice ── */
+    .auto-notice {
+      font-size: 0.75rem;
+      color: #667eea;
+      background: rgba(102,126,234,0.08);
+      border: 1px solid rgba(102,126,234,0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin: 16px 0 4px;
+    }
+
+    /* ── Submit button ── */
+    .btn-predict {
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-predict:hover   { opacity: 0.9; }
+    .btn-predict:active  { transform: scale(0.98); }
+    .btn-predict:disabled{ opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Result panel ── */
+    .result-panel { display: flex; flex-direction: column; gap: 16px; }
+
+    .result-box {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.3s;
+    }
+    .result-box.has-result { border-color: #667eea; }
+    .result-box .result-label { font-size: 0.78rem; color: #718096; text-transform: uppercase; letter-spacing: 1px; }
+    .result-box .result-value {
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #b794f4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1.1;
+      margin-top: 8px;
+    }
+    .result-box .result-unit  { font-size: 0.9rem; color: #718096; margin-top: 4px; }
+    .result-box .result-idle  { font-size: 0.88rem; color: #4a5568; }
+
+    .error-box {
+      background: rgba(245,101,101,0.08);
+      border: 1px solid rgba(245,101,101,0.3);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.83rem;
+      color: #fc8181;
+      display: none;
+    }
+
+    /* ── Info card ── */
+    .info-card { font-size: 0.82rem; color: #718096; line-height: 1.7; }
+    .info-card strong { color: #a0aec0; }
+    .info-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #2d3748; }
+    .info-row:last-child { border-bottom: none; }
+    .info-row .info-val { color: #e2e8f0; font-weight: 500; }
+
+    /* ── Loader ── */
+    .loader {
+      width: 28px; height: 28px;
+      border: 3px solid #2d3748;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 800px) {
+      .metrics-row { grid-template-columns: repeat(2, 1fr); }
+      .main-grid   { grid-template-columns: 1fr; }
+      .form-grid   { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">⚡</div>
+  <div>
+    <h1>Energy Demand Forecaster</h1>
+    <p>LightGBM · Hourly Building Demand Prediction</p>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- Model metrics -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="label">R² Score</div>
+      <div class="value green">{{ "%.4f"|format(metrics.r2) }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">RMSE</div>
+      <div class="value blue">{{ "%.4f"|format(metrics.rmse) }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">MAE</div>
+      <div class="value purple">{{ "%.4f"|format(metrics.mae) }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="label">MAPE</div>
+      <div class="value orange">{{ "%.2f"|format(metrics.mape) }}%</div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+
+    <!-- Left — input form -->
+    <div class="card">
+      <h2>⚙️ Input Features <span class="badge">13 features</span></h2>
+
+      <div class="form-section-title">📅 Calendar</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Hour of Day</label>
+          <select id="hour" onchange="updateCyclic()">
+            {% for h in range(24) %}<option value="{{ h }}">{{ "%02d:00"|format(h) }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Day of Week</label>
+          <select id="weekday" onchange="updateWeekend()">
+            <option value="0">Monday</option>
+            <option value="1">Tuesday</option>
+            <option value="2">Wednesday</option>
+            <option value="3">Thursday</option>
+            <option value="4">Friday</option>
+            <option value="5">Saturday</option>
+            <option value="6">Sunday</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Month</label>
+          <select id="month">
+            {% for m, name in [(1,'January'),(2,'February'),(3,'March'),(4,'April'),(5,'May'),(6,'June'),(7,'July'),(8,'August'),(9,'September'),(10,'October'),(11,'November'),(12,'December')] %}
+            <option value="{{ m }}">{{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Is Weekend</label>
+          <input type="number" id="is_weekend" value="0" min="0" max="1" readonly
+                 style="background:#0f1117; color:#718096; cursor:default;">
+          <span class="hint">Auto-filled from day of week</span>
+        </div>
+      </div>
+
+      <div class="auto-notice">
+        ✨ Hour sin/cos are calculated automatically from the hour you select above.
+      </div>
+
+      <div class="form-section-title">📈 Lag Features (kW)</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Lag 1 — 1 hour ago</label>
+          <input type="number" id="lag_1" value="45.2" step="0.1">
+        </div>
+        <div class="form-group">
+          <label>Lag 24 — 24 hours ago</label>
+          <input type="number" id="lag_24" value="44.8" step="0.1">
+        </div>
+        <div class="form-group">
+          <label>Lag 48 — 48 hours ago</label>
+          <input type="number" id="lag_48" value="43.1" step="0.1">
+        </div>
+        <div class="form-group">
+          <label>Lag 168 — same hour last week</label>
+          <input type="number" id="lag_168" value="46.3" step="0.1">
+        </div>
+      </div>
+
+      <div class="form-section-title">📊 Rolling Mean Features (kW)</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Rolling 24h mean</label>
+          <input type="number" id="rolling_24" value="35.6" step="0.1">
+        </div>
+        <div class="form-group">
+          <label>Rolling 48h mean</label>
+          <input type="number" id="rolling_48" value="34.2" step="0.1">
+        </div>
+        <div class="form-group" style="grid-column: span 2">
+          <label>Rolling 168h mean (1 week)</label>
+          <input type="number" id="rolling_168" value="33.8" step="0.1">
+        </div>
+      </div>
+
+      <button class="btn-predict" onclick="predict()" id="predictBtn">
+        ⚡ Predict Energy Demand
+      </button>
+    </div>
+
+    <!-- Right — result + info -->
+    <div class="result-panel">
+
+      <div class="card">
+        <h2>🎯 Prediction</h2>
+        <div class="result-box" id="resultBox">
+          <div class="result-idle">Fill in the features and click Predict</div>
+          <div class="loader" id="loader"></div>
+        </div>
+        <div class="error-box" id="errorBox"></div>
+      </div>
+
+      <div class="card">
+        <h2>📋 Model Info</h2>
+        <div class="info-card">
+          <div class="info-row"><span>Algorithm</span>     <span class="info-val">LightGBM</span></div>
+          <div class="info-row"><span>Tuning</span>        <span class="info-val">Optuna (50 trials)</span></div>
+          <div class="info-row"><span>Validation</span>    <span class="info-val">TimeSeriesSplit 5-fold</span></div>
+          <div class="info-row"><span>Features</span>      <span class="info-val">13</span></div>
+          <div class="info-row"><span>Train period</span>  <span class="info-val">Jul 2018 – Jun 2019</span></div>
+          <div class="info-row"><span>Test period</span>   <span class="info-val">Jul 2019 onwards</span></div>
+          <div class="info-row"><span>CV RMSE</span>       <span class="info-val">5.375 ± 0.961</span></div>
+          <div class="info-row"><span>CV R²</span>         <span class="info-val">0.9478 ± 0.0223</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🔗 API</h2>
+        <div class="info-card">
+          <div class="info-row"><span>GET /api</span>            <span class="info-val">Health check</span></div>
+          <div class="info-row"><span>GET /features</span>       <span class="info-val">Feature list</span></div>
+          <div class="info-row"><span>POST /predict</span>       <span class="info-val">Single prediction</span></div>
+          <div class="info-row"><span>POST /predict_batch</span> <span class="info-val">Batch predictions</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // Auto-update is_weekend when weekday changes
+  function updateWeekend() {
+    const wd = parseInt(document.getElementById('weekday').value);
+    document.getElementById('is_weekend').value = wd >= 5 ? 1 : 0;
+  }
+
+  // Auto-update cyclic hour (handled server-side in payload)
+  function updateCyclic() {}   // kept for extensibility
+
+  async function predict() {
+    const btn    = document.getElementById('predictBtn');
+    const loader = document.getElementById('loader');
+    const box    = document.getElementById('resultBox');
+    const errBox = document.getElementById('errorBox');
+
+    const hour    = parseInt(document.getElementById('hour').value);
+    const weekday = parseInt(document.getElementById('weekday').value);
+
+    const payload = {
+      hour,
+      weekday,
+      month      : parseInt(document.getElementById('month').value),
+      is_weekend : weekday >= 5 ? 1 : 0,
+      hour_sin   : Math.sin(2 * Math.PI * hour / 24),
+      hour_cos   : Math.cos(2 * Math.PI * hour / 24),
+      lag_1      : parseFloat(document.getElementById('lag_1').value),
+      lag_24     : parseFloat(document.getElementById('lag_24').value),
+      lag_48     : parseFloat(document.getElementById('lag_48').value),
+      lag_168    : parseFloat(document.getElementById('lag_168').value),
+      rolling_24 : parseFloat(document.getElementById('rolling_24').value),
+      rolling_48 : parseFloat(document.getElementById('rolling_48').value),
+      rolling_168: parseFloat(document.getElementById('rolling_168').value),
+    };
+
+    // Validate
+    for (const [k, v] of Object.entries(payload)) {
+      if (isNaN(v)) {
+        showError(`Invalid value for "${k}". Please enter a number.`);
+        return;
+      }
+    }
+
+    // Loading state
+    btn.disabled  = true;
+    btn.textContent = 'Predicting…';
+    box.classList.remove('has-result');
+    box.innerHTML = '<div class="loader" style="display:block"></div>';
+    errBox.style.display = 'none';
+
+    try {
+      const res  = await fetch('/predict', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || 'Prediction failed.');
+        return;
+      }
+
+      const val = data.predicted_total_demand_kW.toFixed(2);
+      box.classList.add('has-result');
+      box.innerHTML = `
+        <div class="result-label">Predicted Total Demand</div>
+        <div class="result-value">${val}</div>
+        <div class="result-unit">kilowatts (kW)</div>
+      `;
+    } catch (e) {
+      showError('Network error — is the server running?');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = '⚡ Predict Energy Demand';
+    }
+  }
+
+  function showError(msg) {
+    const box    = document.getElementById('resultBox');
+    const errBox = document.getElementById('errorBox');
+    box.innerHTML = '<div class="result-idle">Enter values and try again</div>';
+    box.classList.remove('has-result');
+    errBox.style.display = 'block';
+    errBox.textContent   = '⚠ ' + msg;
+  }
+</script>
+</body>
+</html>

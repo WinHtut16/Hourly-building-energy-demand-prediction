@@ -1,19 +1,13 @@
 """
 app.py
 ------
-Flask REST API for the Energy Demand Forecasting model.
-
-Endpoints:
-  GET  /              → health check + model metrics
-  POST /predict       → predict total demand (kW) for given features
-  POST /predict_batch → predict for a list of records
-  GET  /features      → list of required input features
+Flask app — serves a UI at / and a REST API at /api, /predict, /predict_batch
 """
 
 import os
 import pickle
 import numpy as np
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 
 # ── Load model artifact ────────────────────────────────────────────────────────
 MODEL_PATH = os.getenv("MODEL_PATH", "model.pkl")
@@ -29,8 +23,7 @@ metrics  = artifact["metrics"]
 app = Flask(__name__)
 
 
-def validate_input(data: dict) -> tuple[dict | None, str | None]:
-    """Return (cleaned_dict, error_message)."""
+def validate_input(data: dict):
     missing = [f for f in FEATURES if f not in data]
     if missing:
         return None, f"Missing fields: {missing}"
@@ -41,8 +34,14 @@ def validate_input(data: dict) -> tuple[dict | None, str | None]:
     return row, None
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# ── UI ────────────────────────────────────────────────────────────────────────
 @app.route("/", methods=["GET"])
+def index():
+    return render_template("index.html", metrics=metrics)
+
+
+# ── API routes ────────────────────────────────────────────────────────────────
+@app.route("/api", methods=["GET"])
 def health():
     return jsonify({
         "status" : "ok",
@@ -61,12 +60,12 @@ def features():
     return jsonify({
         "required_features": FEATURES,
         "descriptions": {
-            "hour"       : "Hour of day (0–23)",
+            "hour"       : "Hour of day (0-23)",
             "weekday"    : "Day of week (0=Monday, 6=Sunday)",
-            "month"      : "Month of year (1–12)",
+            "month"      : "Month of year (1-12)",
             "is_weekend" : "1 if Saturday/Sunday, else 0",
-            "hour_sin"   : "sin(2π × hour / 24) — cyclic hour encoding",
-            "hour_cos"   : "cos(2π × hour / 24) — cyclic hour encoding",
+            "hour_sin"   : "sin(2pi x hour / 24) - cyclic hour encoding",
+            "hour_cos"   : "cos(2pi x hour / 24) - cyclic hour encoding",
             "lag_1"      : "Total demand 1 hour ago (kW)",
             "lag_24"     : "Total demand 24 hours ago (kW)",
             "lag_48"     : "Total demand 48 hours ago (kW)",
@@ -88,7 +87,7 @@ def predict():
     if err:
         return jsonify({"error": err}), 422
 
-    X = np.array([[row[f] for f in FEATURES]])
+    X    = np.array([[row[f] for f in FEATURES]])
     pred = float(model.predict(X)[0])
 
     return jsonify({
@@ -118,7 +117,7 @@ def predict_batch():
     if errors:
         return jsonify({"errors": errors}), 422
 
-    X = np.array([[r[f] for f in FEATURES] for r in cleaned])
+    X     = np.array([[r[f] for f in FEATURES] for r in cleaned])
     preds = model.predict(X).tolist()
 
     return jsonify({
