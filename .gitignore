@@ -6,3 +6,4 @@ __pycache__/
 data/
 *.ipynb
 .ipynb_checkpoints/
+!notebooks/energy_demand_forecasting.ipynb
