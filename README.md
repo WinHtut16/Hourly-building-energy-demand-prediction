@@ -19,6 +19,17 @@ Visit the live URL to access the interactive prediction UI. No coding required.
 
 ---
 
+## 📊 Dataset
+
+The dataset used for training this model is publicly available on Kaggle:
+
+🔗 https://www.kaggle.com/datasets/claytonmiller/cubems-smart-building-energy-and-iaq-data
+
+Due to size constraints, the dataset is not included in this repository.  
+Please download it manually and place it in the `data/` directory before running the notebook.
+
+---
+
 ## 📊 Model Comparison
 
 Three models were evaluated on the same test set (Jul 2019 onwards) to justify the final model choice.
@@ -162,12 +173,14 @@ curl -X POST https://hourly-building-energy-demand-prediction.onrender.com/predi
 ## 📁 Repo Structure
 
 ```
-├── app.py                  # Flask app (UI + REST API)
-├── model.pkl               # Trained LightGBM model artifact
-├── requirements.txt        # Python dependencies
-├── Dockerfile              # Container config for Render
+├── app.py                          # Flask app (UI + REST API)
+├── model.pkl                       # Trained LightGBM model artifact
+├── requirements.txt                # Python dependencies
+├── Dockerfile                      # Container config for Render
 ├── templates/
-│   └── index.html          # Web UI
+│   └── index.html                  # Web UI
+├── notebooks/
+│   └── energy_demand_forecasting.ipynb   # ML workflow (EDA, feature engineering, training)
 └── README.md
 ```
 
